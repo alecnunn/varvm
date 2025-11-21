@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::io::Write;
-use crate::types::{DataType, Operand, Value};
 use crate::opcode::OpCode;
 use crate::program::Program;
+use crate::types::{DataType, Operand, Value};
+use std::collections::HashMap;
+use std::io::Write;
 
 // Macro for binary operations
 macro_rules! binary_op {
@@ -88,7 +88,10 @@ impl VM {
 
     pub fn run(&mut self) -> Result<i32, String> {
         // Start by calling main
-        let main_func = self.program.functions.get("main")
+        let main_func = self
+            .program
+            .functions
+            .get("main")
             .ok_or_else(|| "No main function found".to_string())?
             .clone();
         self.ip = main_func.start_ip + 1;
@@ -143,7 +146,9 @@ impl VM {
 
             OpCode::Load { dest, ptr, dtype } => {
                 let addr = self.get_variable(&ptr)?.as_usize()?;
-                let bytes = self.heap.get(&addr)
+                let bytes = self
+                    .heap
+                    .get(&addr)
                     .ok_or_else(|| format!("Invalid pointer: {:#x}", addr))?;
                 let value = self.bytes_to_value(bytes, dtype)?;
                 self.set_variable(&dest, value)?;
@@ -158,7 +163,9 @@ impl VM {
 
             OpCode::GetAddr { dest, var } => {
                 // Simulated address - in real impl would need actual memory addresses
-                let fake_addr = var.bytes().fold(0usize, |acc, b| acc.wrapping_add(b as usize));
+                let fake_addr = var
+                    .bytes()
+                    .fold(0usize, |acc, b| acc.wrapping_add(b as usize));
                 self.set_variable(&dest, Value::Ptr(fake_addr))?;
             }
 
@@ -183,7 +190,11 @@ impl VM {
             OpCode::Shl { dest, left, right } => binary_op!(self, dest, left, right, shift_left),
             OpCode::Shr { dest, left, right } => binary_op!(self, dest, left, right, shift_right),
 
-            OpCode::Cast { dest, source, target_type } => {
+            OpCode::Cast {
+                dest,
+                source,
+                target_type,
+            } => {
                 let val = self.get_variable(&source)?;
                 self.set_variable(&dest, val.cast(target_type)?)?;
             }
@@ -193,12 +204,17 @@ impl VM {
                 print!("Enter value for {}: ", dest);
                 io::stdout().flush().ok();
                 let stdin = io::stdin();
-                let line = stdin.lock().lines().next()
+                let line = stdin
+                    .lock()
+                    .lines()
+                    .next()
                     .ok_or_else(|| "Failed to read input".to_string())?
                     .map_err(|e| format!("IO error: {}", e))?;
 
                 // Try to parse as i32 by default
-                let value = line.trim().parse::<i32>()
+                let value = line
+                    .trim()
+                    .parse::<i32>()
                     .map(Value::I32)
                     .map_err(|_| format!("Invalid integer: {}", line))?;
 
@@ -217,14 +233,20 @@ impl VM {
             }
 
             OpCode::Jmp { label } => {
-                self.ip = *self.program.labels.get(&label)
+                self.ip = *self
+                    .program
+                    .labels
+                    .get(&label)
                     .ok_or_else(|| format!("Unknown label: {}", label))?;
             }
 
             OpCode::Jz { var, label } => {
                 let val = self.get_variable(&var)?;
                 if val.is_zero() {
-                    self.ip = *self.program.labels.get(&label)
+                    self.ip = *self
+                        .program
+                        .labels
+                        .get(&label)
                         .ok_or_else(|| format!("Unknown label: {}", label))?;
                 }
             }
@@ -232,14 +254,20 @@ impl VM {
             OpCode::Jnz { var, label } => {
                 let val = self.get_variable(&var)?;
                 if !val.is_zero() {
-                    self.ip = *self.program.labels.get(&label)
+                    self.ip = *self
+                        .program
+                        .labels
+                        .get(&label)
                         .ok_or_else(|| format!("Unknown label: {}", label))?;
                 }
             }
 
             OpCode::FuncBegin { name, .. } => {
                 // Skip to end of function if not being called
-                let func = self.program.functions.get(&name)
+                let func = self
+                    .program
+                    .functions
+                    .get(&name)
                     .ok_or_else(|| format!("Unknown function: {}", name))?;
                 self.ip = func.end_ip + 1;
             }
@@ -249,7 +277,10 @@ impl VM {
             }
 
             OpCode::Call { result, func, args } => {
-                let func_def = self.program.functions.get(&func)
+                let func_def = self
+                    .program
+                    .functions
+                    .get(&func)
                     .ok_or_else(|| format!("Unknown function: {}", func))?
                     .clone();
 
@@ -261,13 +292,16 @@ impl VM {
                 }
 
                 // Push current frame with return destination
-                let mut frame = std::mem::replace(&mut self.current_frame, CallFrame {
-                    function_name: func.clone(),
-                    return_ip: 0,
-                    locals: HashMap::new(),
-                    return_dest: None,
-                    args: arg_values,
-                });
+                let mut frame = std::mem::replace(
+                    &mut self.current_frame,
+                    CallFrame {
+                        function_name: func.clone(),
+                        return_ip: 0,
+                        locals: HashMap::new(),
+                        return_dest: None,
+                        args: arg_values,
+                    },
+                );
                 frame.return_ip = self.ip;
                 frame.return_dest = result; // Store return dest in caller's frame
                 self.call_stack.push(frame);
@@ -326,7 +360,9 @@ impl VM {
     }
 
     fn get_variable(&self, name: &str) -> Result<Value, String> {
-        self.current_frame.locals.get(name)
+        self.current_frame
+            .locals
+            .get(name)
             .or_else(|| self.globals.get(name))
             .cloned()
             .ok_or_else(|| format!("Unknown variable: {}", name))
@@ -378,15 +414,16 @@ impl VM {
                 if bytes.len() < 4 {
                     return Err("Insufficient bytes for I32".to_string());
                 }
-                Ok(Value::I32(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])))
+                Ok(Value::I32(i32::from_le_bytes([
+                    bytes[0], bytes[1], bytes[2], bytes[3],
+                ])))
             }
             DataType::I64 => {
                 if bytes.len() < 8 {
                     return Err("Insufficient bytes for I64".to_string());
                 }
                 Ok(Value::I64(i64::from_le_bytes([
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                 ])))
             }
             DataType::U8 => {
@@ -405,30 +442,32 @@ impl VM {
                 if bytes.len() < 4 {
                     return Err("Insufficient bytes for U32".to_string());
                 }
-                Ok(Value::U32(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])))
+                Ok(Value::U32(u32::from_le_bytes([
+                    bytes[0], bytes[1], bytes[2], bytes[3],
+                ])))
             }
             DataType::U64 => {
                 if bytes.len() < 8 {
                     return Err("Insufficient bytes for U64".to_string());
                 }
                 Ok(Value::U64(u64::from_le_bytes([
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                 ])))
             }
             DataType::F32 => {
                 if bytes.len() < 4 {
                     return Err("Insufficient bytes for F32".to_string());
                 }
-                Ok(Value::F32(f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])))
+                Ok(Value::F32(f32::from_le_bytes([
+                    bytes[0], bytes[1], bytes[2], bytes[3],
+                ])))
             }
             DataType::F64 => {
                 if bytes.len() < 8 {
                     return Err("Insufficient bytes for F64".to_string());
                 }
                 Ok(Value::F64(f64::from_le_bytes([
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                 ])))
             }
             DataType::Ptr => {
@@ -436,8 +475,7 @@ impl VM {
                     return Err("Insufficient bytes for Ptr".to_string());
                 }
                 Ok(Value::Ptr(usize::from_le_bytes([
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                 ])))
             }
             DataType::Void => Err("Cannot read Void type from memory".to_string()),
@@ -457,7 +495,10 @@ impl VM {
             (Value::F32(v), DataType::F32) => Ok(v.to_le_bytes().to_vec()),
             (Value::F64(v), DataType::F64) => Ok(v.to_le_bytes().to_vec()),
             (Value::Ptr(v), DataType::Ptr) => Ok(v.to_le_bytes().to_vec()),
-            _ => Err(format!("Type mismatch: cannot store {:?} as {:?}", value, dtype)),
+            _ => Err(format!(
+                "Type mismatch: cannot store {:?} as {:?}",
+                value, dtype
+            )),
         }
     }
 }

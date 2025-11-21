@@ -1,12 +1,15 @@
-mod types;
+mod examples;
 mod opcode;
 mod program;
+mod types;
 mod vm;
-mod examples;
 
-use examples::{factorial_program, bitwise_operations_test, type_cast_test, memory_operations_test, comparison_test};
-use vm::VM;
+use examples::{
+    bitwise_operations_test, comparison_test, factorial_program, memory_operations_test,
+    type_cast_test,
+};
 use std::env;
+use vm::VM;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

@@ -1,6 +1,6 @@
-use crate::types::DataType;
 use crate::opcode::OpCode;
-use crate::program::{Program, Variable, Function};
+use crate::program::{Function, Program, Variable};
+use crate::types::DataType;
 
 pub fn bitwise_operations_test() -> Program {
     let mut prog = Program::new();
@@ -22,7 +22,9 @@ pub fn bitwise_operations_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 0b1000 = 8
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 0b1000 = 8
 
     // Test OR
     prog.emit(OpCode::Or {
@@ -30,7 +32,9 @@ pub fn bitwise_operations_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 0b1110 = 14
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 0b1110 = 14
 
     // Test XOR
     prog.emit(OpCode::Xor {
@@ -38,7 +42,9 @@ pub fn bitwise_operations_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 0b0110 = 6
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 0b0110 = 6
 
     // Test NOT
     prog.set_var("a", 0);
@@ -46,7 +52,9 @@ pub fn bitwise_operations_test() -> Program {
         dest: "result".to_string(),
         source: "a".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be -1
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be -1
 
     // Test Shift Left
     prog.set_var("a", 5);
@@ -56,7 +64,9 @@ pub fn bitwise_operations_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 20 (5 << 2)
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 20 (5 << 2)
 
     // Test Shift Right
     prog.set_var("a", 20);
@@ -66,9 +76,13 @@ pub fn bitwise_operations_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 5 (20 >> 2)
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 5 (20 >> 2)
 
-    prog.emit(OpCode::Return { value: Some(0.into()) });
+    prog.emit(OpCode::Return {
+        value: Some(0.into()),
+    });
     let end = prog.emit(OpCode::FuncEnd);
 
     let mut main_func = Function::new("main".to_string(), DataType::I32);
@@ -98,7 +112,9 @@ pub fn type_cast_test() -> Program {
         source: "i32_val".to_string(),
         target_type: DataType::F32,
     });
-    prog.emit(OpCode::Print { var: "f32_val".to_string() }); // Should be 42.0
+    prog.emit(OpCode::Print {
+        var: "f32_val".to_string(),
+    }); // Should be 42.0
 
     // Cast f32 to i64
     prog.emit(OpCode::Cast {
@@ -106,9 +122,13 @@ pub fn type_cast_test() -> Program {
         source: "f32_val".to_string(),
         target_type: DataType::I64,
     });
-    prog.emit(OpCode::Print { var: "i64_val".to_string() }); // Should be 42
+    prog.emit(OpCode::Print {
+        var: "i64_val".to_string(),
+    }); // Should be 42
 
-    prog.emit(OpCode::Return { value: Some(0.into()) });
+    prog.emit(OpCode::Return {
+        value: Some(0.into()),
+    });
     let end = prog.emit(OpCode::FuncEnd);
 
     let mut main_func = Function::new("main".to_string(), DataType::I32);
@@ -151,14 +171,18 @@ pub fn memory_operations_test() -> Program {
         ptr: "ptr".to_string(),
         dtype: DataType::I32,
     });
-    prog.emit(OpCode::Print { var: "loaded".to_string() }); // Should be 123
+    prog.emit(OpCode::Print {
+        var: "loaded".to_string(),
+    }); // Should be 123
 
     // Free memory
     prog.emit(OpCode::Free {
         ptr: "ptr".to_string(),
     });
 
-    prog.emit(OpCode::Return { value: Some(0.into()) });
+    prog.emit(OpCode::Return {
+        value: Some(0.into()),
+    });
     let end = prog.emit(OpCode::FuncEnd);
 
     let mut main_func = Function::new("main".to_string(), DataType::I32);
@@ -190,7 +214,9 @@ pub fn comparison_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 1
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 1
 
     // Test Ge (greater or equal)
     prog.emit(OpCode::Ge {
@@ -198,7 +224,9 @@ pub fn comparison_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 1
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 1
 
     prog.set_var("a", 5);
     prog.emit(OpCode::Ge {
@@ -206,9 +234,13 @@ pub fn comparison_test() -> Program {
         left: "a".into(),
         right: "b".into(),
     });
-    prog.emit(OpCode::Print { var: "result".to_string() }); // Should be 1
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    }); // Should be 1
 
-    prog.emit(OpCode::Return { value: Some(0.into()) });
+    prog.emit(OpCode::Return {
+        value: Some(0.into()),
+    });
     let end = prog.emit(OpCode::FuncEnd);
 
     let mut main_func = Function::new("main".to_string(), DataType::I32);
@@ -233,8 +265,12 @@ pub fn factorial_program() -> Program {
     prog.create_local(DataType::I32, "n");
     prog.set_var("n", 5);
     prog.call(Some("result"), "factorial", &["n"]);
-    prog.emit(OpCode::Print { var: "result".to_string() });
-    prog.emit(OpCode::Return { value: Some(0.into()) });
+    prog.emit(OpCode::Print {
+        var: "result".to_string(),
+    });
+    prog.emit(OpCode::Return {
+        value: Some(0.into()),
+    });
     let main_end = prog.emit(OpCode::FuncEnd);
 
     let mut main_func = Function::new("main".to_string(), DataType::I32);
@@ -246,7 +282,9 @@ pub fn factorial_program() -> Program {
         name: "factorial".to_string(),
         return_type: DataType::I32,
     });
-    prog.emit(OpCode::PopArg { dest: "n".to_string() });
+    prog.emit(OpCode::PopArg {
+        dest: "n".to_string(),
+    });
     prog.create_local(DataType::I32, "temp");
     prog.set_var("temp", 1);
     prog.emit(OpCode::Le {
@@ -272,11 +310,17 @@ pub fn factorial_program() -> Program {
         left: "n".into(),
         right: "temp".into(),
     });
-    prog.emit(OpCode::Return { value: Some("temp".into()) });
+    prog.emit(OpCode::Return {
+        value: Some("temp".into()),
+    });
 
     // Base case
-    prog.emit(OpCode::Label { name: "base_case".to_string() });
-    prog.emit(OpCode::Return { value: Some(1.into()) });
+    prog.emit(OpCode::Label {
+        name: "base_case".to_string(),
+    });
+    prog.emit(OpCode::Return {
+        value: Some(1.into()),
+    });
     let factorial_end = prog.emit(OpCode::FuncEnd);
 
     let mut factorial_func = Function::new("factorial".to_string(), DataType::I32);

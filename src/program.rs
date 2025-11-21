@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use crate::types::{DataType, Operand};
 use crate::opcode::OpCode;
+use crate::types::{DataType, Operand};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Variable {
