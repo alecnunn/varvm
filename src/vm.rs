@@ -4,6 +4,41 @@ use crate::types::{DataType, Operand, Value};
 use crate::opcode::OpCode;
 use crate::program::Program;
 
+// Macro for binary operations
+macro_rules! binary_op {
+    ($self:expr, $dest:expr, $left:expr, $right:expr, $method:ident) => {{
+        let l = $self.resolve_operand(&$left)?;
+        let r = $self.resolve_operand(&$right)?;
+        $self.set_variable(&$dest, l.$method(&r)?)?;
+    }};
+}
+
+// Macro for comparison operations
+macro_rules! comparison_op {
+    ($self:expr, $dest:expr, $left:expr, $right:expr, $method:ident) => {{
+        let l = $self.resolve_operand(&$left)?;
+        let r = $self.resolve_operand(&$right)?;
+        $self.set_variable(&$dest, Value::I32(if l.$method(&r)? { 1 } else { 0 }))?;
+    }};
+}
+
+// Macro for equality comparison
+macro_rules! equality_op {
+    ($self:expr, $dest:expr, $left:expr, $right:expr, $op:tt) => {{
+        let l = $self.resolve_operand(&$left)?;
+        let r = $self.resolve_operand(&$right)?;
+        $self.set_variable(&$dest, Value::I32(if l $op r { 1 } else { 0 }))?;
+    }};
+}
+
+// Macro for unary operations
+macro_rules! unary_op {
+    ($self:expr, $dest:expr, $source:expr, $method:ident) => {{
+        let val = $self.resolve_operand(&$source)?;
+        $self.set_variable(&$dest, val.$method()?)?;
+    }};
+}
+
 #[derive(Debug, Clone)]
 pub struct CallFrame {
     pub function_name: String,
@@ -127,111 +162,26 @@ impl VM {
                 self.set_variable(&dest, Value::Ptr(fake_addr))?;
             }
 
-            OpCode::Add { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.add(&r)?)?;
-            }
+            OpCode::Add { dest, left, right } => binary_op!(self, dest, left, right, add),
+            OpCode::Sub { dest, left, right } => binary_op!(self, dest, left, right, sub),
+            OpCode::Mul { dest, left, right } => binary_op!(self, dest, left, right, mul),
+            OpCode::Div { dest, left, right } => binary_op!(self, dest, left, right, div),
+            OpCode::Mod { dest, left, right } => binary_op!(self, dest, left, right, modulo),
+            OpCode::Neg { dest, source } => unary_op!(self, dest, source, neg),
 
-            OpCode::Sub { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.sub(&r)?)?;
-            }
+            OpCode::Eq { dest, left, right } => equality_op!(self, dest, left, right, ==),
+            OpCode::Ne { dest, left, right } => equality_op!(self, dest, left, right, !=),
+            OpCode::Lt { dest, left, right } => comparison_op!(self, dest, left, right, lt),
+            OpCode::Le { dest, left, right } => comparison_op!(self, dest, left, right, le),
+            OpCode::Gt { dest, left, right } => comparison_op!(self, dest, left, right, gt),
+            OpCode::Ge { dest, left, right } => comparison_op!(self, dest, left, right, ge),
 
-            OpCode::Mul { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.mul(&r)?)?;
-            }
-
-            OpCode::Div { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.div(&r)?)?;
-            }
-
-            OpCode::Mod { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.modulo(&r)?)?;
-            }
-
-            OpCode::Neg { dest, source } => {
-                let val = self.resolve_operand(&source)?;
-                self.set_variable(&dest, val.neg()?)?;
-            }
-
-            OpCode::Eq { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, Value::I32(if l == r { 1 } else { 0 }))?;
-            }
-
-            OpCode::Ne { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, Value::I32(if l != r { 1 } else { 0 }))?;
-            }
-
-            OpCode::Lt { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, Value::I32(if l.lt(&r)? { 1 } else { 0 }))?;
-            }
-
-            OpCode::Le { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, Value::I32(if l.le(&r)? { 1 } else { 0 }))?;
-            }
-
-            OpCode::Gt { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, Value::I32(if l.gt(&r)? { 1 } else { 0 }))?;
-            }
-
-            OpCode::Ge { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, Value::I32(if l.ge(&r)? { 1 } else { 0 }))?;
-            }
-
-            OpCode::And { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.bitwise_and(&r)?)?;
-            }
-
-            OpCode::Or { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.bitwise_or(&r)?)?;
-            }
-
-            OpCode::Xor { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.bitwise_xor(&r)?)?;
-            }
-
-            OpCode::Not { dest, source } => {
-                let val = self.resolve_operand(&source)?;
-                self.set_variable(&dest, val.bitwise_not()?)?;
-            }
-
-            OpCode::Shl { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.shift_left(&r)?)?;
-            }
-
-            OpCode::Shr { dest, left, right } => {
-                let l = self.resolve_operand(&left)?;
-                let r = self.resolve_operand(&right)?;
-                self.set_variable(&dest, l.shift_right(&r)?)?;
-            }
+            OpCode::And { dest, left, right } => binary_op!(self, dest, left, right, bitwise_and),
+            OpCode::Or { dest, left, right } => binary_op!(self, dest, left, right, bitwise_or),
+            OpCode::Xor { dest, left, right } => binary_op!(self, dest, left, right, bitwise_xor),
+            OpCode::Not { dest, source } => unary_op!(self, dest, source, bitwise_not),
+            OpCode::Shl { dest, left, right } => binary_op!(self, dest, left, right, shift_left),
+            OpCode::Shr { dest, left, right } => binary_op!(self, dest, left, right, shift_right),
 
             OpCode::Cast { dest, source, target_type } => {
                 let val = self.get_variable(&source)?;

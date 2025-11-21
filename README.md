@@ -62,9 +62,16 @@ All arithmetic and bitwise operations check types at runtime and return appropri
 
 ## Project Structure
 
-- `src/types.rs` - type definitions and value operations
+- `src/types.rs` - type definitions (macro-driven)
 - `src/opcode.rs` - instruction set definition
 - `src/program.rs` - program structure and builders
-- `src/vm.rs` - execution engine
+- `src/vm.rs` - execution engine (macro-driven operation handlers)
 - `src/examples.rs` - example programs
 - `src/main.rs` - entry point
+- `varvm-macros/` - proc macro crate for code generation
+
+## Architecture
+
+The project uses macros extensively to reduce boilerplate:
+- Proc macro `ValueOps` generates all arithmetic, bitwise, comparison, and type conversion methods
+- Declarative macros simplify the VM's execute_instruction handler
