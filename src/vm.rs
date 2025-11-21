@@ -413,7 +413,7 @@ impl VM {
     fn bytes_to_value(&self, bytes: &[u8], dtype: DataType) -> Result<Value, String> {
         match dtype {
             DataType::I8 => {
-                if bytes.len() < 1 {
+                if bytes.is_empty() {
                     return Err("Insufficient bytes for I8".to_string());
                 }
                 Ok(Value::I8(i8::from_le_bytes([bytes[0]])))
@@ -440,7 +440,7 @@ impl VM {
                 ])))
             }
             DataType::U8 => {
-                if bytes.len() < 1 {
+                if bytes.is_empty() {
                     return Err("Insufficient bytes for U8".to_string());
                 }
                 Ok(Value::U8(bytes[0]))
