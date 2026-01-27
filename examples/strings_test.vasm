@@ -1,0 +1,30 @@
+; String literals test
+; Demonstrates: string declarations and basic usage
+
+section .data
+    message: str "Hello, World!"
+    name: str "Alice"
+    greeting: str "Welcome to VarVM"
+
+section .text
+main:
+    func_begin i32
+    local char: i32
+    local addr: ptr
+
+    ; Print the address of the message string (should be non-zero)
+    copy addr, message
+    print addr
+
+    ; Load and print first character of "Hello, World!" (should be 72 = 'H')
+    copy addr, message
+    load char, addr, i8
+    print char
+
+    ; Load second character (should be 101 = 'e')
+    add addr, addr, 1
+    load char, addr, i8
+    print char
+
+    ret 0
+    func_end

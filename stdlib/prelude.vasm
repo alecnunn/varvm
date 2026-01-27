@@ -1,0 +1,100 @@
+; VarVM Standard Library - Prelude
+; Common utility functions
+
+section .text
+
+; clamp(value, min, max) -> value clamped between min and max
+clamp:
+    func_begin i32
+    pop_arg value
+    pop_arg min_val
+    pop_arg max_val
+
+    local result: i32
+    max result, value, min_val  ; result = max(value, min)
+    min result, result, max_val ; result = min(result, max)
+
+    ret result
+    func_end
+
+; swap(a_ptr, b_ptr) - swap two values in memory
+swap:
+    func_begin i32
+    pop_arg a_ptr
+    pop_arg b_ptr
+
+    local temp: i32
+    load temp, a_ptr, i32
+    local b_val: i32
+    load b_val, b_ptr, i32
+
+    store a_ptr, b_val, i32
+    store b_ptr, temp, i32
+
+    ret 0
+    func_end
+
+; array_sum(arr_ptr, length) -> sum of array elements
+array_sum:
+    func_begin i32
+    pop_arg arr_ptr
+    pop_arg length
+
+    local sum: i32
+    set sum, 0
+
+    local i: i32
+    set i, 0
+
+.loop:
+    local cond: i32
+    lt cond, i, length
+    jz cond, .done
+
+    local offset: i32
+    mul offset, i, 4  ; Assuming 4-byte integers
+
+    local elem_ptr: ptr
+    add elem_ptr, arr_ptr, offset
+
+    local elem: i32
+    load elem, elem_ptr, i32
+
+    add sum, sum, elem
+
+    local inc: i32
+    set inc, 1
+    add i, i, inc
+    jmp .loop
+
+.done:
+    ret sum
+    func_end
+
+; is_even(n) -> 1 if even, 0 if odd
+is_even:
+    func_begin i32
+    pop_arg n
+
+    local result: i32
+    mod result, n, 2
+    local zero: i32
+    set zero, 0
+    eq result, result, zero
+
+    ret result
+    func_end
+
+; is_odd(n) -> 1 if odd, 0 if even
+is_odd:
+    func_begin i32
+    pop_arg n
+
+    local result: i32
+    mod result, n, 2
+    local one: i32
+    set one, 1
+    eq result, result, one
+
+    ret result
+    func_end

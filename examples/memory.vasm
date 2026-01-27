@@ -1,0 +1,27 @@
+; memory.vasm
+; Tests memory operations
+
+section .text
+
+main:
+    func_begin i32
+    local mem_ptr: ptr
+    local value: i32
+    local loaded: i32
+
+    ; Allocate memory for one i32 (4 bytes)
+    alloc mem_ptr, 4
+
+    ; Store value
+    set value, 123
+    store mem_ptr, value, i32
+
+    ; Load value
+    load loaded, mem_ptr, i32
+    print loaded        ; Should be 123
+
+    ; Free memory
+    free mem_ptr
+
+    ret 0
+    func_end

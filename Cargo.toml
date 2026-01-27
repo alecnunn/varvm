@@ -3,5 +3,24 @@ name = "varvm"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "varvm"
+path = "src/bin/varvm.rs"
+
+[[bin]]
+name = "varvm-examples"
+path = "src/main.rs"
+
+# [[bin]]
+# name = "varvm-debug"
+# path = "src/bin/varvm-debug.rs"
+# Note: Interactive debugger needs VM refactoring for proper stepping integration
+
 [dependencies]
 varvm-macros = { path = "varvm-macros" }
+chumsky = "1.0.0-alpha.8"
+clap = { version = "4.5", features = ["derive"] }
+
+[lib]
+name = "varvm"
+path = "src/lib.rs"

@@ -1,0 +1,19 @@
+; Test simple function with local variable i
+section .text
+
+test_func:
+    func_begin i32
+    local i: i32
+    set i, 42
+    ret i
+    func_end
+
+main:
+    func_begin i32
+    local result: i32
+
+    call result, test_func
+    print result
+
+    ret 0
+    func_end

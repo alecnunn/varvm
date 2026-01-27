@@ -1,7 +1,8 @@
 use crate::opcode::OpCode;
 use crate::program::Program;
+use crate::tools::profiler::ProfileData;
 use crate::types::{DataType, Operand, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
 
 // Macro for binary operations
@@ -24,10 +25,15 @@ macro_rules! comparison_op {
 
 // Macro for equality comparison
 macro_rules! equality_op {
-    ($self:expr, $dest:expr, $left:expr, $right:expr, $op:tt) => {{
+    ($self:expr, $dest:expr, $left:expr, $right:expr, ==) => {{
         let l = $self.resolve_operand(&$left)?;
         let r = $self.resolve_operand(&$right)?;
-        $self.set_variable(&$dest, Value::I32(if l $op r { 1 } else { 0 }))?;
+        $self.set_variable(&$dest, Value::I32(if l.equals(&r) { 1 } else { 0 }))?;
+    }};
+    ($self:expr, $dest:expr, $left:expr, $right:expr, !=) => {{
+        let l = $self.resolve_operand(&$left)?;
+        let r = $self.resolve_operand(&$right)?;
+        $self.set_variable(&$dest, Value::I32(if !l.equals(&r) { 1 } else { 0 }))?;
     }};
 }
 
@@ -48,6 +54,8 @@ pub struct CallFrame {
     pub args: Vec<Value>,
 }
 
+pub type DebugCallback = Box<dyn FnMut(&mut VM, usize, &OpCode) -> Result<(), String>>;
+
 pub struct VM {
     program: Program,
     ip: usize,
@@ -57,6 +65,11 @@ pub struct VM {
     heap: HashMap<usize, Vec<u8>>,
     next_heap_addr: usize,
     running: bool,
+    debug_mode: bool,
+    breakpoints: HashSet<usize>,
+    debug_callback: Option<DebugCallback>,
+    profile_enabled: bool,
+    profile_data: ProfileData,
 }
 
 impl VM {
@@ -76,6 +89,11 @@ impl VM {
             heap: HashMap::new(),
             next_heap_addr: 0x1000,
             running: true,
+            debug_mode: false,
+            breakpoints: HashSet::new(),
+            debug_callback: None,
+            profile_enabled: false,
+            profile_data: ProfileData::new(),
         };
 
         // Initialize globals
@@ -83,7 +101,32 @@ impl VM {
             vm.globals.insert(global.name.clone(), Value::I32(0));
         }
 
+        // Initialize string literals
+        vm.initialize_strings();
+
         vm
+    }
+
+    fn initialize_strings(&mut self) {
+        for string_literal in &self.program.strings.clone() {
+            // Allocate memory for the string (content + null terminator)
+            let bytes = string_literal.content.as_bytes();
+            let mut string_bytes = bytes.to_vec();
+            string_bytes.push(0); // Add null terminator
+
+            // Allocate memory
+            let addr = self.next_heap_addr;
+            self.next_heap_addr += string_bytes.len();
+
+            // Store the string bytes in heap
+            self.heap.insert(addr, string_bytes);
+
+            // Set the global pointer variable to point to this string
+            self.globals.insert(
+                string_literal.global_name.clone(),
+                Value::Ptr(addr),
+            );
+        }
     }
 
     pub fn run(&mut self) -> Result<i32, String> {
@@ -103,9 +146,36 @@ impl VM {
     }
 
     fn execute_instruction(&mut self) -> Result<(), String> {
+        let current_ip = self.ip;
         let instruction = self.program.instructions[self.ip].clone();
+
+        // Profile: record instruction execution if profiling enabled
+        if self.profile_enabled {
+            self.profile_data.record_instruction(current_ip, &instruction);
+        }
+
+        // Debug hook: call callback before executing if in debug mode
+        if self.debug_mode || self.breakpoints.contains(&current_ip) {
+            if self.debug_callback.is_some() {
+                let mut callback = self.debug_callback.take().unwrap();
+                let result = callback(self, current_ip, &instruction);
+                self.debug_callback = Some(callback);
+                result?;
+            }
+        }
+
         self.ip += 1;
 
+        let result = self.execute_one(instruction);
+
+        if let Err(e) = result {
+            return Err(self.format_error(&e, current_ip));
+        }
+
+        Ok(())
+    }
+
+    fn execute_one(&mut self, instruction: OpCode) -> Result<(), String> {
         match instruction {
             OpCode::CreateLocal { dtype, name } => {
                 let value = self.default_value(dtype);
@@ -146,11 +216,16 @@ impl VM {
 
             OpCode::Load { dest, ptr, dtype } => {
                 let addr = self.get_variable(&ptr)?.as_usize()?;
-                let bytes = self
-                    .heap
-                    .get(&addr)
-                    .ok_or_else(|| format!("Invalid pointer: {:#x}", addr))?;
-                let value = self.bytes_to_value(bytes, dtype)?;
+                // Calculate how many bytes we need to read based on dtype
+                let byte_count = match dtype {
+                    DataType::I8 | DataType::U8 => 1,
+                    DataType::I16 | DataType::U16 => 2,
+                    DataType::I32 | DataType::U32 | DataType::F32 => 4,
+                    DataType::I64 | DataType::U64 | DataType::F64 | DataType::Ptr => 8,
+                    DataType::Void => 0,
+                };
+                let bytes = self.load_bytes_from_heap(addr, byte_count)?;
+                let value = self.bytes_to_value(&bytes, dtype)?;
                 self.set_variable(&dest, value)?;
             }
 
@@ -158,7 +233,7 @@ impl VM {
                 let addr = self.get_variable(&ptr)?.as_usize()?;
                 let value = self.get_variable(&source)?;
                 let bytes = self.value_to_bytes(&value, dtype)?;
-                self.heap.insert(addr, bytes);
+                self.store_bytes_to_heap(addr, bytes)?;
             }
 
             OpCode::GetAddr { dest, var } => {
@@ -286,8 +361,8 @@ impl VM {
 
                 // Get argument values before switching frames
                 let mut arg_values = Vec::new();
-                for arg in &args {
-                    let val = self.get_variable(arg)?;
+                for arg in args {
+                    let val = self.resolve_operand(&arg)?;
                     arg_values.push(val);
                 }
 
@@ -334,6 +409,98 @@ impl VM {
                 } else {
                     return Err("No arguments to pop".to_string());
                 }
+            }
+
+            OpCode::Sqrt { dest, source } => {
+                let val = self.resolve_operand(&source)?;
+                let result = match val {
+                    Value::F32(v) => Value::F32(v.sqrt()),
+                    Value::F64(v) => Value::F64(v.sqrt()),
+                    _ => return Err(format!("sqrt requires float type, got {:?}", val)),
+                };
+                self.set_variable(&dest, result)?;
+            }
+
+            OpCode::Pow { dest, base, exp } => {
+                let base_val = self.resolve_operand(&base)?;
+                let exp_val = self.resolve_operand(&exp)?;
+                let result = match (base_val, exp_val) {
+                    (Value::F32(b), Value::F32(e)) => Value::F32(b.powf(e)),
+                    (Value::F64(b), Value::F64(e)) => Value::F64(b.powf(e)),
+                    (Value::I32(b), Value::I32(e)) => {
+                        Value::I32((b as f64).powi(e) as i32)
+                    }
+                    _ => return Err("pow requires matching numeric types".to_string()),
+                };
+                self.set_variable(&dest, result)?;
+            }
+
+            OpCode::Abs { dest, source } => {
+                let val = self.resolve_operand(&source)?;
+                let result = match val {
+                    Value::I32(v) => Value::I32(v.abs()),
+                    Value::I64(v) => Value::I64(v.abs()),
+                    Value::F32(v) => Value::F32(v.abs()),
+                    Value::F64(v) => Value::F64(v.abs()),
+                    _ => return Err(format!("abs requires numeric type, got {:?}", val)),
+                };
+                self.set_variable(&dest, result)?;
+            }
+
+            OpCode::Min { dest, a, b } => {
+                let a_val = self.resolve_operand(&a)?;
+                let b_val = self.resolve_operand(&b)?;
+                let result = match (a_val, b_val) {
+                    (Value::I32(x), Value::I32(y)) => Value::I32(x.min(y)),
+                    (Value::I64(x), Value::I64(y)) => Value::I64(x.min(y)),
+                    (Value::F32(x), Value::F32(y)) => Value::F32(x.min(y)),
+                    (Value::F64(x), Value::F64(y)) => Value::F64(x.min(y)),
+                    _ => return Err("min requires matching numeric types".to_string()),
+                };
+                self.set_variable(&dest, result)?;
+            }
+
+            OpCode::Max { dest, a, b } => {
+                let a_val = self.resolve_operand(&a)?;
+                let b_val = self.resolve_operand(&b)?;
+                let result = match (a_val, b_val) {
+                    (Value::I32(x), Value::I32(y)) => Value::I32(x.max(y)),
+                    (Value::I64(x), Value::I64(y)) => Value::I64(x.max(y)),
+                    (Value::F32(x), Value::F32(y)) => Value::F32(x.max(y)),
+                    (Value::F64(x), Value::F64(y)) => Value::F64(x.max(y)),
+                    _ => return Err("max requires matching numeric types".to_string()),
+                };
+                self.set_variable(&dest, result)?;
+            }
+
+            OpCode::Sin { dest, source } => {
+                let val = self.resolve_operand(&source)?;
+                let result = match val {
+                    Value::F32(v) => Value::F32(v.sin()),
+                    Value::F64(v) => Value::F64(v.sin()),
+                    _ => return Err(format!("sin requires float type, got {:?}", val)),
+                };
+                self.set_variable(&dest, result)?;
+            }
+
+            OpCode::Cos { dest, source } => {
+                let val = self.resolve_operand(&source)?;
+                let result = match val {
+                    Value::F32(v) => Value::F32(v.cos()),
+                    Value::F64(v) => Value::F64(v.cos()),
+                    _ => return Err(format!("cos requires float type, got {:?}", val)),
+                };
+                self.set_variable(&dest, result)?;
+            }
+
+            OpCode::Tan { dest, source } => {
+                let val = self.resolve_operand(&source)?;
+                let result = match val {
+                    Value::F32(v) => Value::F32(v.tan()),
+                    Value::F64(v) => Value::F64(v.tan()),
+                    _ => return Err(format!("tan requires float type, got {:?}", val)),
+                };
+                self.set_variable(&dest, result)?;
             }
 
             OpCode::Print { var } => {
@@ -394,6 +561,43 @@ impl VM {
             DataType::Ptr => Value::Ptr(0),
             DataType::Void => Value::I32(0),
         }
+    }
+
+    fn find_heap_allocation(&self, addr: usize) -> Result<(usize, usize), String> {
+        // Find which allocation contains this address
+        // Returns (base_address, offset_within_allocation)
+        for (base_addr, bytes) in &self.heap {
+            let end_addr = base_addr + bytes.len();
+            if addr >= *base_addr && addr < end_addr {
+                return Ok((*base_addr, addr - base_addr));
+            }
+        }
+        Err(format!("Invalid pointer: {:#x}", addr))
+    }
+
+    fn load_bytes_from_heap(&self, addr: usize, count: usize) -> Result<Vec<u8>, String> {
+        let (base_addr, offset) = self.find_heap_allocation(addr)?;
+        let allocation = self.heap.get(&base_addr)
+            .ok_or_else(|| format!("Heap allocation not found at {:#x}", base_addr))?;
+
+        if offset + count > allocation.len() {
+            return Err(format!("Read out of bounds at {:#x}", addr));
+        }
+
+        Ok(allocation[offset..offset + count].to_vec())
+    }
+
+    fn store_bytes_to_heap(&mut self, addr: usize, bytes: Vec<u8>) -> Result<(), String> {
+        let (base_addr, offset) = self.find_heap_allocation(addr)?;
+        let allocation = self.heap.get_mut(&base_addr)
+            .ok_or_else(|| format!("Heap allocation not found at {:#x}", base_addr))?;
+
+        if offset + bytes.len() > allocation.len() {
+            return Err(format!("Write out of bounds at {:#x}", addr));
+        }
+
+        allocation[offset..offset + bytes.len()].copy_from_slice(&bytes);
+        Ok(())
     }
 
     fn bytes_to_value(&self, bytes: &[u8], dtype: DataType) -> Result<Value, String> {
@@ -500,5 +704,89 @@ impl VM {
                 value, dtype
             )),
         }
+    }
+
+    fn format_error(&self, error: &str, ip: usize) -> String {
+        if let Some(source_map) = &self.program.source_map {
+            if let Some(location) = source_map.instruction_locations.get(&ip) {
+                return format!(
+                    "Runtime error at {}:{}:{}\n  {}\n",
+                    source_map.file.display(),
+                    location.line,
+                    location.column,
+                    error
+                );
+            }
+        }
+
+        format!("Runtime error: {}", error)
+    }
+
+    // Debug methods
+    pub fn set_debug_mode(&mut self, enabled: bool) {
+        self.debug_mode = enabled;
+    }
+
+    pub fn set_debug_callback(&mut self, callback: DebugCallback) {
+        self.debug_callback = Some(callback);
+    }
+
+    pub fn add_breakpoint(&mut self, ip: usize) {
+        self.breakpoints.insert(ip);
+    }
+
+    pub fn remove_breakpoint(&mut self, ip: usize) {
+        self.breakpoints.remove(&ip);
+    }
+
+    pub fn clear_breakpoints(&mut self) {
+        self.breakpoints.clear();
+    }
+
+    pub fn get_breakpoints(&self) -> &HashSet<usize> {
+        &self.breakpoints
+    }
+
+    pub fn get_ip(&self) -> usize {
+        self.ip
+    }
+
+    pub fn get_program(&self) -> &Program {
+        &self.program
+    }
+
+    pub fn get_globals(&self) -> &HashMap<String, Value> {
+        &self.globals
+    }
+
+    pub fn get_current_frame(&self) -> &CallFrame {
+        &self.current_frame
+    }
+
+    pub fn get_call_stack(&self) -> &Vec<CallFrame> {
+        &self.call_stack
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.running
+    }
+
+    pub fn stop(&mut self) {
+        self.running = false;
+    }
+
+    // Profiling methods
+    pub fn enable_profiling(&mut self) {
+        self.profile_enabled = true;
+        self.profile_data.start();
+    }
+
+    pub fn disable_profiling(&mut self) {
+        self.profile_enabled = false;
+        self.profile_data.stop();
+    }
+
+    pub fn get_profile_data(&self) -> &ProfileData {
+        &self.profile_data
     }
 }

@@ -31,6 +31,11 @@ fn generate_binary_ops() -> proc_macro2::TokenStream {
                 (Value::I64(a), Value::I64(b)) => Ok(Value::I64(a + b)),
                 (Value::F32(a), Value::F32(b)) => Ok(Value::F32(a + b)),
                 (Value::F64(a), Value::F64(b)) => Ok(Value::F64(a + b)),
+                // Pointer arithmetic: Ptr + Integer
+                (Value::Ptr(ptr), Value::I32(offset)) => Ok(Value::Ptr((*ptr as isize + *offset as isize) as usize)),
+                (Value::Ptr(ptr), Value::I64(offset)) => Ok(Value::Ptr((*ptr as isize + *offset as isize) as usize)),
+                (Value::Ptr(ptr), Value::U32(offset)) => Ok(Value::Ptr(ptr + *offset as usize)),
+                (Value::Ptr(ptr), Value::U64(offset)) => Ok(Value::Ptr(ptr + *offset as usize)),
                 _ => Err("Type mismatch in addition".to_string()),
             }
         }
@@ -41,6 +46,13 @@ fn generate_binary_ops() -> proc_macro2::TokenStream {
                 (Value::I64(a), Value::I64(b)) => Ok(Value::I64(a - b)),
                 (Value::F32(a), Value::F32(b)) => Ok(Value::F32(a - b)),
                 (Value::F64(a), Value::F64(b)) => Ok(Value::F64(a - b)),
+                // Pointer arithmetic: Ptr - Integer
+                (Value::Ptr(ptr), Value::I32(offset)) => Ok(Value::Ptr((*ptr as isize - *offset as isize) as usize)),
+                (Value::Ptr(ptr), Value::I64(offset)) => Ok(Value::Ptr((*ptr as isize - *offset as isize) as usize)),
+                (Value::Ptr(ptr), Value::U32(offset)) => Ok(Value::Ptr(ptr - *offset as usize)),
+                (Value::Ptr(ptr), Value::U64(offset)) => Ok(Value::Ptr(ptr - *offset as usize)),
+                // Pointer difference: Ptr - Ptr -> I64
+                (Value::Ptr(a), Value::Ptr(b)) => Ok(Value::I64((*a as isize - *b as isize) as i64)),
                 _ => Err("Type mismatch in subtraction".to_string()),
             }
         }

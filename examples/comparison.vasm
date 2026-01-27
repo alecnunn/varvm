@@ -1,0 +1,29 @@
+; comparison.vasm
+; Tests comparison operations
+
+section .text
+
+main:
+    func_begin i32
+    local a: i32
+    local b: i32
+    local result: i32
+
+    set a, 10
+    set b, 5
+
+    ; Test Gt (greater than)
+    gt result, a, b
+    print result        ; Should be 1
+
+    ; Test Ge (greater or equal)
+    ge result, a, b
+    print result        ; Should be 1
+
+    ; Test Ge with equal values
+    set a, 5
+    ge result, a, b
+    print result        ; Should be 1
+
+    ret 0
+    func_end

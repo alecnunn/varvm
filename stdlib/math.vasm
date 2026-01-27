@@ -1,0 +1,165 @@
+; VarVM Standard Library - Math Functions
+; Mathematical algorithms and functions
+
+section .text
+
+; factorial(n) -> n!
+factorial:
+    func_begin i32
+    pop_arg n
+
+    local temp: i32
+    set temp, 1
+    le temp, n, temp
+    jnz temp, .base_case
+
+    local n_minus_1: i32
+    sub n_minus_1, n, 1
+    call temp, factorial, n_minus_1
+    mul temp, n, temp
+    ret temp
+
+.base_case:
+    ret 1
+    func_end
+
+; fibonacci(n) -> nth Fibonacci number
+fibonacci:
+    func_begin i32
+    pop_arg n
+
+    local two: i32
+    set two, 2
+    local cond: i32
+    lt cond, n, two
+    jnz cond, .base_case
+
+    local n_minus_1: i32
+    sub n_minus_1, n, 1
+    local fib1: i32
+    call fib1, fibonacci, n_minus_1
+
+    local n_minus_2: i32
+    sub n_minus_2, n, 2
+    local fib2: i32
+    call fib2, fibonacci, n_minus_2
+
+    local result: i32
+    add result, fib1, fib2
+    ret result
+
+.base_case:
+    ret n
+    func_end
+
+; gcd(a, b) -> greatest common divisor
+gcd:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+
+    local zero: i32
+    set zero, 0
+    local cond: i32
+    eq cond, b, zero
+    jnz cond, .return_a
+
+    local remainder: i32
+    mod remainder, a, b
+
+    call remainder, gcd, b, remainder
+    ret remainder
+
+.return_a:
+    ret a
+    func_end
+
+; lcm(a, b) -> least common multiple
+lcm:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+
+    local gcd_val: i32
+    call gcd_val, gcd, a, b
+
+    local product: i32
+    mul product, a, b
+
+    local result: i32
+    div result, product, gcd_val
+
+    ret result
+    func_end
+
+; power(base, exp) -> base^exp (integer exponentiation)
+power:
+    func_begin i32
+    pop_arg base
+    pop_arg exp
+
+    local zero: i32
+    set zero, 0
+    local cond: i32
+    eq cond, exp, zero
+    jnz cond, .return_one
+
+    local one: i32
+    set one, 1
+    eq cond, exp, one
+    jnz cond, .return_base
+
+    local exp_minus_1: i32
+    sub exp_minus_1, exp, 1
+    local power_result: i32
+    call power_result, power, base, exp_minus_1
+
+    local result: i32
+    mul result, base, power_result
+    ret result
+
+.return_one:
+    ret 1
+
+.return_base:
+    ret base
+    func_end
+
+; is_prime(n) -> 1 if prime, 0 if composite
+is_prime:
+    func_begin i32
+    pop_arg n
+
+    local two: i32
+    set two, 2
+    local cond: i32
+    lt cond, n, two
+    jnz cond, .return_false
+
+    local i: i32
+    set i, 2
+
+.loop:
+    local i_squared: i32
+    mul i_squared, i, i
+    gt cond, i_squared, n
+    jnz cond, .return_true
+
+    local remainder: i32
+    mod remainder, n, i
+    local zero: i32
+    set zero, 0
+    eq cond, remainder, zero
+    jnz cond, .return_false
+
+    local one: i32
+    set one, 1
+    add i, i, one
+    jmp .loop
+
+.return_true:
+    ret 1
+
+.return_false:
+    ret 0
+    func_end

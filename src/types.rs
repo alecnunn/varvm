@@ -83,4 +83,65 @@ impl Value {
             _ => Err("Cannot convert to usize (negative or invalid type)".to_string()),
         }
     }
+
+    // Cross-type numeric equality comparison
+    pub fn equals(&self, other: &Value) -> bool {
+        // For floating point, convert both to f64 and compare
+        if matches!(self, Value::F32(_) | Value::F64(_)) || matches!(other, Value::F32(_) | Value::F64(_)) {
+            let a = match self {
+                Value::I8(v) => *v as f64,
+                Value::I16(v) => *v as f64,
+                Value::I32(v) => *v as f64,
+                Value::I64(v) => *v as f64,
+                Value::U8(v) => *v as f64,
+                Value::U16(v) => *v as f64,
+                Value::U32(v) => *v as f64,
+                Value::U64(v) => *v as f64,
+                Value::F32(v) => *v as f64,
+                Value::F64(v) => *v,
+                Value::Ptr(v) => *v as f64,
+            };
+            let b = match other {
+                Value::I8(v) => *v as f64,
+                Value::I16(v) => *v as f64,
+                Value::I32(v) => *v as f64,
+                Value::I64(v) => *v as f64,
+                Value::U8(v) => *v as f64,
+                Value::U16(v) => *v as f64,
+                Value::U32(v) => *v as f64,
+                Value::U64(v) => *v as f64,
+                Value::F32(v) => *v as f64,
+                Value::F64(v) => *v,
+                Value::Ptr(v) => *v as f64,
+            };
+            return a == b;
+        }
+
+        // For integers, convert both to i64 and compare
+        let a = match self {
+            Value::I8(v) => *v as i64,
+            Value::I16(v) => *v as i64,
+            Value::I32(v) => *v as i64,
+            Value::I64(v) => *v,
+            Value::U8(v) => *v as i64,
+            Value::U16(v) => *v as i64,
+            Value::U32(v) => *v as i64,
+            Value::U64(v) => *v as i64,
+            Value::Ptr(v) => *v as i64,
+            _ => return false,
+        };
+        let b = match other {
+            Value::I8(v) => *v as i64,
+            Value::I16(v) => *v as i64,
+            Value::I32(v) => *v as i64,
+            Value::I64(v) => *v,
+            Value::U8(v) => *v as i64,
+            Value::U16(v) => *v as i64,
+            Value::U32(v) => *v as i64,
+            Value::U64(v) => *v as i64,
+            Value::Ptr(v) => *v as i64,
+            _ => return false,
+        };
+        a == b
+    }
 }

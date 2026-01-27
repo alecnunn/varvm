@@ -1,0 +1,24 @@
+; Test the include directive with stdlib
+include "math"
+
+section .text
+main:
+    func_begin i32
+    local result: i32
+    local n: i32
+    local a: i32
+    local b: i32
+
+    ; Test factorial from math.vasm
+    set n, 5
+    call result, factorial, n
+    print result
+
+    ; Test gcd from math.vasm
+    set a, 48
+    set b, 18
+    call result, gcd, a, b
+    print result
+
+    ret 0
+    func_end

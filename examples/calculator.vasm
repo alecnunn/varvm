@@ -1,0 +1,95 @@
+; Simple Calculator
+; Demonstrates: user input, control flow, function calls
+; Operations: add, subtract, multiply, divide
+
+section .text
+
+; Add two numbers
+add_numbers:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+    local result: i32
+    add result, a, b
+    ret result
+    func_end
+
+; Subtract two numbers
+subtract_numbers:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+    local result: i32
+    sub result, a, b
+    ret result
+    func_end
+
+; Multiply two numbers
+multiply_numbers:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+    local result: i32
+    mul result, a, b
+    ret result
+    func_end
+
+; Divide two numbers
+divide_numbers:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+    local result: i32
+    div result, a, b
+    ret result
+    func_end
+
+main:
+    func_begin i32
+    local operation: i32
+    local num1: i32
+    local num2: i32
+    local result: i32
+    local continue: i32
+
+    set continue, 1
+
+.loop:
+    ; Check if we should continue
+    jnz continue, .do_calculation
+    jmp .exit
+
+.do_calculation:
+    ; Get operation choice (1=add, 2=sub, 3=mul, 4=div, 0=exit)
+    set operation, 1
+
+    ; For demonstration, let's do all operations on 20 and 5
+    set num1, 20
+    set num2, 5
+
+    ; Test addition
+    call result, add_numbers, num1, num2
+    print result    ; Output: I32(25)
+
+    ; Test subtraction
+    set operation, 2
+    call result, subtract_numbers, num1, num2
+    print result    ; Output: I32(15)
+
+    ; Test multiplication
+    set operation, 3
+    call result, multiply_numbers, num1, num2
+    print result    ; Output: I32(100)
+
+    ; Test division
+    set operation, 4
+    call result, divide_numbers, num1, num2
+    print result    ; Output: I32(4)
+
+    ; Exit loop
+    set continue, 0
+    jmp .loop
+
+.exit:
+    ret 0
+    func_end
