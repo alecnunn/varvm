@@ -1,0 +1,27 @@
+; Test strlen function
+include "../stdlib/strings.vasm"
+
+section .data
+    hello: str "Hello"
+    world: str "World"
+    empty: str ""
+
+section .text
+main:
+    func_begin i32
+    local len: i32
+
+    ; Test strlen on "Hello" (should be 5)
+    call len, strlen, hello
+    print len
+
+    ; Test strlen on "World" (should be 5)
+    call len, strlen, world
+    print len
+
+    ; Test strlen on empty string (should be 0)
+    call len, strlen, empty
+    print len
+
+    ret 0
+    func_end

@@ -1,0 +1,44 @@
+; bitwise.vasm
+; Tests bitwise operations
+
+section .text
+
+main:
+    func_begin i32
+    local a: i32
+    local b: i32
+    local result: i32
+
+    ; Test AND
+    set a, 12
+    set b, 10
+    and result, a, b
+    print result        ; Should be 8 (0b1000)
+
+    ; Test OR
+    or result, a, b
+    print result        ; Should be 14 (0b1110)
+
+    ; Test XOR
+    xor result, a, b
+    print result        ; Should be 6 (0b0110)
+
+    ; Test NOT
+    set a, 0
+    not result, a
+    print result        ; Should be -1
+
+    ; Test Shift Left
+    set a, 5
+    set b, 2
+    shl result, a, b
+    print result        ; Should be 20 (5 << 2)
+
+    ; Test Shift Right
+    set a, 20
+    set b, 2
+    shr result, a, b
+    print result        ; Should be 5 (20 >> 2)
+
+    ret 0
+    func_end

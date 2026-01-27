@@ -1,0 +1,24 @@
+; Test define directive
+; Demonstrates: constant definitions and substitution
+
+define MAX_SIZE 100
+define PI 3.14159
+define MULTIPLIER 5
+
+section .text
+main:
+    func_begin i32
+    local size: i32
+    local pi_val: f32
+    local result: i32
+
+    ; Use MAX_SIZE constant
+    set size, MAX_SIZE
+    print size    ; Output: I32(100)
+
+    ; Use MULTIPLIER constant in calculation
+    mul result, size, MULTIPLIER
+    print result  ; Output: I32(500)
+
+    ret 0
+    func_end

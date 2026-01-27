@@ -1,0 +1,20 @@
+; Custom user library
+
+section .text
+double:
+    func_begin i32
+    pop_arg x
+    local result: i32
+    add result, x, x
+    ret result
+    func_end
+
+triple:
+    func_begin i32
+    pop_arg x
+    local result: i32
+    local temp: i32
+    add temp, x, x
+    add result, temp, x
+    ret result
+    func_end

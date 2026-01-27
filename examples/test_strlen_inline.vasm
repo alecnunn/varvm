@@ -1,0 +1,76 @@
+; Test strlen function inline
+section .data
+    hello: str "Hello"
+
+section .text
+
+; strlen - Get length of null-terminated string
+; Arguments: str_ptr (ptr)
+; Returns: length (i32)
+strlen:
+    func_begin i32
+    pop_arg str_ptr
+    local length: i32
+    local current_ptr: ptr
+    local byte: i32
+    local is_zero: i32
+
+    ; Debug: print str_ptr value
+    print str_ptr
+
+    ; Initialize
+    set length, 0
+    copy current_ptr, str_ptr
+
+    ; Debug: print current_ptr before first load
+    print current_ptr
+
+.loop:
+    ; Load byte at current position
+    load byte, current_ptr, i8
+
+    ; Debug: print byte value
+    print byte
+
+    ; Check if it's zero (null terminator)
+    eq is_zero, byte, 0
+
+    ; Debug: print is_zero
+    print is_zero
+
+    jnz is_zero, .done
+
+    ; Increment length
+    add length, length, 1
+
+    ; Debug: print length
+    print length
+
+    ; Move to next byte
+    add current_ptr, current_ptr, 1
+
+    ; Debug: print current_ptr after increment
+    print current_ptr
+
+    jmp .loop
+
+.done:
+    ; Debug: reached done
+    ret length
+    func_end
+
+main:
+    func_begin i32
+    local len: i32
+    local hello_ptr: ptr
+
+    ; Debug: print hello pointer value
+    copy hello_ptr, hello
+    print hello_ptr
+
+    ; Test strlen on "Hello" (should be 5)
+    call len, strlen, hello
+    print len
+
+    ret 0
+    func_end

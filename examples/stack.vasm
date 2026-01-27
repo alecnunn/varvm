@@ -1,0 +1,279 @@
+; Stack Data Structure Implementation
+; Demonstrates: arrays in memory, data structures, control flow
+; Operations: push, pop, peek, is_empty
+;
+; Note: This is a simplified stack using separate memory slots
+; for each element (since VarVM doesn't support pointer arithmetic)
+
+section .data
+    ; Stack storage - 5 slots for demonstration
+    slot0: ptr
+    slot1: ptr
+    slot2: ptr
+    slot3: ptr
+    slot4: ptr
+    stack_size: i32
+    stack_capacity: i32
+
+section .text
+
+; Initialize stack
+stack_init:
+    func_begin i32
+    ; Set capacity to 5
+    set stack_capacity, 5
+
+    ; Initialize size to 0
+    set stack_size, 0
+
+    ret 1
+    func_end
+
+; Push value onto stack
+; Returns 1 on success, 0 if stack is full
+stack_push:
+    func_begin i32
+    pop_arg value
+    local is_full: i32
+    local slot_index: i32
+    local success: i32
+
+    ; Check if stack is full
+    ge is_full, stack_size, stack_capacity
+    jnz is_full, .stack_full
+
+    ; Get current size as slot index
+    copy slot_index, stack_size
+
+    ; Store value based on slot index
+    ; slot_index == 0
+    eq success, slot_index, 0
+    jnz success, .store_slot0
+
+    ; slot_index == 1
+    eq success, slot_index, 1
+    jnz success, .store_slot1
+
+    ; slot_index == 2
+    eq success, slot_index, 2
+    jnz success, .store_slot2
+
+    ; slot_index == 3
+    eq success, slot_index, 3
+    jnz success, .store_slot3
+
+    ; slot_index == 4
+    jmp .store_slot4
+
+.store_slot0:
+    alloc slot0, 4
+    store slot0, value, i32
+    jmp .push_done
+
+.store_slot1:
+    alloc slot1, 4
+    store slot1, value, i32
+    jmp .push_done
+
+.store_slot2:
+    alloc slot2, 4
+    store slot2, value, i32
+    jmp .push_done
+
+.store_slot3:
+    alloc slot3, 4
+    store slot3, value, i32
+    jmp .push_done
+
+.store_slot4:
+    alloc slot4, 4
+    store slot4, value, i32
+    jmp .push_done
+
+.push_done:
+    ; Increment size
+    add stack_size, stack_size, 1
+    ret 1
+
+.stack_full:
+    ret 0
+    func_end
+
+; Pop value from stack
+stack_pop:
+    func_begin i32
+    local is_empty: i32
+    local slot_index: i32
+    local value: i32
+    local check: i32
+
+    ; Check if stack is empty
+    le is_empty, stack_size, 0
+    jnz is_empty, .stack_empty
+
+    ; Decrement size first
+    sub stack_size, stack_size, 1
+
+    ; Get slot index (now stack_size points to the item to pop)
+    copy slot_index, stack_size
+
+    ; Load value based on slot index
+    ; slot_index == 0
+    eq check, slot_index, 0
+    jnz check, .load_slot0
+
+    ; slot_index == 1
+    eq check, slot_index, 1
+    jnz check, .load_slot1
+
+    ; slot_index == 2
+    eq check, slot_index, 2
+    jnz check, .load_slot2
+
+    ; slot_index == 3
+    eq check, slot_index, 3
+    jnz check, .load_slot3
+
+    ; slot_index == 4
+    jmp .load_slot4
+
+.load_slot0:
+    load value, slot0, i32
+    free slot0
+    ret value
+
+.load_slot1:
+    load value, slot1, i32
+    free slot1
+    ret value
+
+.load_slot2:
+    load value, slot2, i32
+    free slot2
+    ret value
+
+.load_slot3:
+    load value, slot3, i32
+    free slot3
+    ret value
+
+.load_slot4:
+    load value, slot4, i32
+    free slot4
+    ret value
+
+.stack_empty:
+    ret 0
+    func_end
+
+; Peek at top value without removing it
+stack_peek:
+    func_begin i32
+    local is_empty: i32
+    local top_index: i32
+    local value: i32
+    local check: i32
+
+    ; Check if stack is empty
+    le is_empty, stack_size, 0
+    jnz is_empty, .stack_empty
+
+    ; Get top index (size - 1)
+    sub top_index, stack_size, 1
+
+    ; Load value based on slot index
+    ; top_index == 0
+    eq check, top_index, 0
+    jnz check, .peek_slot0
+
+    ; top_index == 1
+    eq check, top_index, 1
+    jnz check, .peek_slot1
+
+    ; top_index == 2
+    eq check, top_index, 2
+    jnz check, .peek_slot2
+
+    ; top_index == 3
+    eq check, top_index, 3
+    jnz check, .peek_slot3
+
+    ; top_index == 4
+    jmp .peek_slot4
+
+.peek_slot0:
+    load value, slot0, i32
+    ret value
+
+.peek_slot1:
+    load value, slot1, i32
+    ret value
+
+.peek_slot2:
+    load value, slot2, i32
+    ret value
+
+.peek_slot3:
+    load value, slot3, i32
+    ret value
+
+.peek_slot4:
+    load value, slot4, i32
+    ret value
+
+.stack_empty:
+    ret 0
+    func_end
+
+; Check if stack is empty
+stack_is_empty:
+    func_begin i32
+    local result: i32
+    le result, stack_size, 0
+    ret result
+    func_end
+
+main:
+    func_begin i32
+    local result: i32
+    local value: i32
+    local empty: i32
+
+    ; Initialize stack
+    call result, stack_init
+
+    ; Push some values
+    set value, 10
+    call result, stack_push, value
+
+    set value, 20
+    call result, stack_push, value
+
+    set value, 30
+    call result, stack_push, value
+
+    ; Peek at top
+    call value, stack_peek
+    print value    ; Output: I32(30)
+
+    ; Pop values
+    call value, stack_pop
+    print value    ; Output: I32(30)
+
+    call value, stack_pop
+    print value    ; Output: I32(20)
+
+    ; Peek again
+    call value, stack_peek
+    print value    ; Output: I32(10)
+
+    ; Pop last value
+    call value, stack_pop
+    print value    ; Output: I32(10)
+
+    ; Check if empty
+    call empty, stack_is_empty
+    print empty    ; Output: I32(1) - true
+
+    ret 0
+    func_end

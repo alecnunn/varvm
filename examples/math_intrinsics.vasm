@@ -1,0 +1,54 @@
+; Math intrinsics demonstration
+section .text
+main:
+    func_begin i32
+
+    ; Test sqrt
+    local x: f64
+    set x, 16.0
+    local sqrt_result: f64
+    sqrt sqrt_result, x
+    print sqrt_result
+
+    ; Test pow
+    local base: f64
+    set base, 2.0
+    local exp: f64
+    set exp, 10.0
+    local pow_result: f64
+    pow pow_result, base, exp
+    print pow_result
+
+    ; Test abs
+    local neg: i32
+    set neg, -42
+    local abs_result: i32
+    abs abs_result, neg
+    print abs_result
+
+    ; Test min/max
+    local a: i32
+    set a, 10
+    local b: i32
+    set b, 20
+    local min_result: i32
+    min min_result, a, b
+    print min_result
+
+    local max_result: i32
+    max max_result, a, b
+    print max_result
+
+    ; Test trig functions (radians)
+    local angle: f64
+    set angle, 1.5708  ; ~pi/2
+    local sin_result: f64
+    sin sin_result, angle
+    print sin_result
+
+    local cos_result: f64
+    cos cos_result, angle
+    print cos_result
+
+    ret 0
+    func_end

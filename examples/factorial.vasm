@@ -1,0 +1,35 @@
+; factorial.vasm
+; Computes factorial recursively
+
+section .data
+    result: i32
+
+section .text
+
+main:
+    func_begin i32
+    local n: i32
+    set n, 5
+    call result, factorial, n
+    print result
+    ret 0
+    func_end
+
+factorial:
+    func_begin i32
+    pop_arg n
+    local temp: i32
+    set temp, 1
+    le temp, n, 1
+    jnz temp, .base_case
+
+    ; recursive case
+    local n_minus_1: i32
+    sub n_minus_1, n, 1
+    call temp, factorial, n_minus_1
+    mul temp, n, temp
+    ret temp
+
+.base_case:
+    ret 1
+    func_end

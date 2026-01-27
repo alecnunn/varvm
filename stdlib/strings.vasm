@@ -1,0 +1,146 @@
+; String Standard Library Functions
+; Provides common string manipulation utilities
+
+section .text
+
+; strlen - Get length of null-terminated string
+; Arguments: str_ptr (ptr)
+; Returns: length (i32)
+strlen:
+    func_begin i32
+    pop_arg str_ptr
+    local length: i32
+    local current_ptr: ptr
+    local byte: i32
+    local is_zero: i32
+
+    ; Initialize
+    set length, 0
+    copy current_ptr, str_ptr
+
+.loop:
+    ; Load byte at current position
+    load byte, current_ptr, i8
+
+    ; Check if it's zero (null terminator)
+    eq is_zero, byte, 0
+    jnz is_zero, .done
+
+    ; Increment length
+    add length, length, 1
+
+    ; Move to next byte
+    ; Note: We can't do pointer arithmetic directly yet,
+    ; so we need to work around it
+    add current_ptr, current_ptr, 1
+
+    jmp .loop
+
+.done:
+    ret length
+    func_end
+
+; strcmp - Compare two null-terminated strings
+; Arguments: str1_ptr (ptr), str2_ptr (ptr)
+; Returns: 0 if equal, -1 if str1 < str2, 1 if str1 > str2
+strcmp:
+    func_begin i32
+    pop_arg str1_ptr
+    pop_arg str2_ptr
+    local ptr1: ptr
+    local ptr2: ptr
+    local byte1: i32
+    local byte2: i32
+    local result: i32
+    local is_zero1: i32
+    local is_zero2: i32
+    local both_zero: i32
+
+    ; Initialize pointers
+    copy ptr1, str1_ptr
+    copy ptr2, str2_ptr
+
+.loop:
+    ; Load bytes from both strings
+    load byte1, ptr1, i8
+    load byte2, ptr2, i8
+
+    ; Check if byte1 is zero
+    eq is_zero1, byte1, 0
+    ; Check if byte2 is zero
+    eq is_zero2, byte2, 0
+
+    ; If both are zero, strings are equal
+    and both_zero, is_zero1, is_zero2
+    jnz both_zero, .equal
+
+    ; If only one is zero, they're not equal
+    jnz is_zero1, .less
+    jnz is_zero2, .greater
+
+    ; Compare bytes
+    lt result, byte1, byte2
+    jnz result, .less
+
+    gt result, byte1, byte2
+    jnz result, .greater
+
+    ; Bytes are equal, continue to next
+    add ptr1, ptr1, 1
+    add ptr2, ptr2, 1
+    jmp .loop
+
+.equal:
+    ret 0
+
+.less:
+    set result, -1
+    ret result
+
+.greater:
+    ret 1
+    func_end
+
+; str_char_at - Get character at specific index
+; Arguments: str_ptr (ptr), index (i32)
+; Returns: character (i32), or -1 if out of bounds
+str_char_at:
+    func_begin i32
+    pop_arg str_ptr
+    pop_arg index
+    local current_ptr: ptr
+    local i: i32
+    local byte: i32
+    local is_zero: i32
+    local at_index: i32
+
+    ; Initialize
+    set i, 0
+    copy current_ptr, str_ptr
+
+.loop:
+    ; Check if we're at the target index
+    eq at_index, i, index
+    jnz at_index, .found
+
+    ; Load byte to check for end of string
+    load byte, current_ptr, i8
+    eq is_zero, byte, 0
+    jnz is_zero, .not_found
+
+    ; Move to next character
+    add i, i, 1
+    add current_ptr, current_ptr, 1
+    jmp .loop
+
+.found:
+    ; Load the character at this index
+    load byte, current_ptr, i8
+    eq is_zero, byte, 0
+    jnz is_zero, .not_found
+    ret byte
+
+.not_found:
+    set byte, -1
+    ret byte
+    func_end

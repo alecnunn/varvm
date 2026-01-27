@@ -1,0 +1,26 @@
+; Test immediate values in function calls
+include "../stdlib/strings.vasm"
+
+section .data
+    test: str "Hello, World!"
+
+section .text
+main:
+    func_begin i32
+    local result: i32
+
+    ; Test str_char_at with immediate index (no temp variable needed!)
+    call result, str_char_at, test, 0      ; 'H' = 72
+    print result
+
+    call result, str_char_at, test, 7      ; 'W' = 87
+    print result
+
+    call result, str_char_at, test, 12     ; '!' = 33
+    print result
+
+    call result, str_char_at, test, 100    ; out of bounds = -1
+    print result
+
+    ret 0
+    func_end

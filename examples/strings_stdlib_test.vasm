@@ -1,0 +1,50 @@
+; Test string stdlib functions
+; Tests: strlen, strcmp, str_char_at
+
+include "../stdlib/strings.vasm"
+
+section .data
+    hello: str "Hello"
+    world: str "World"
+    hello2: str "Hello"
+
+section .text
+main:
+    func_begin i32
+    local len: i32
+    local cmp_result: i32
+    local char_at_idx: i32
+
+    ; Test strlen on "Hello" (should be 5)
+    call len, strlen, hello
+    print len
+
+    ; Test strlen on "World" (should be 5)
+    call len, strlen, world
+    print len
+
+    ; Test strcmp - "Hello" vs "World" (should be -1, Hello < World)
+    call cmp_result, strcmp, hello, world
+    print cmp_result
+
+    ; Test strcmp - "Hello" vs "Hello" (should be 0, equal)
+    call cmp_result, strcmp, hello, hello2
+    print cmp_result
+
+    ; Test str_char_at - get character at index 1 from "Hello" (should be 101 = 'e')
+    set char_at_idx, 1
+    call char_at_idx, str_char_at, hello, char_at_idx
+    print char_at_idx
+
+    ; Test str_char_at - get character at index 0 from "World" (should be 87 = 'W')
+    set char_at_idx, 0
+    call char_at_idx, str_char_at, world, char_at_idx
+    print char_at_idx
+
+    ; Test str_char_at - out of bounds (should be -1)
+    set char_at_idx, 10
+    call char_at_idx, str_char_at, hello, char_at_idx
+    print char_at_idx
+
+    ret 0
+    func_end

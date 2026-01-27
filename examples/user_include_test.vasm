@@ -1,0 +1,21 @@
+; Test including user-defined files
+include "my_lib.vasm"
+
+section .text
+main:
+    func_begin i32
+    local result: i32
+    local x: i32
+
+    ; Test double from my_lib.vasm
+    set x, 7
+    call result, double, x
+    print result
+
+    ; Test triple from my_lib.vasm
+    set x, 8
+    call result, triple, x
+    print result
+
+    ret 0
+    func_end

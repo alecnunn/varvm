@@ -1,0 +1,22 @@
+; cast.vasm
+; Tests type casting
+
+section .text
+
+main:
+    func_begin i32
+    local i32_val: i32
+    local f32_val: f32
+    local i64_val: i64
+
+    ; Cast i32 to f32
+    set i32_val, 42
+    cast f32_val, i32_val, f32
+    print f32_val       ; Should be 42.0
+
+    ; Cast f32 to i64
+    cast i64_val, f32_val, i64
+    print i64_val       ; Should be 42
+
+    ret 0
+    func_end

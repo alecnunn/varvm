@@ -1,0 +1,27 @@
+; Test function with two arguments
+section .text
+
+add_numbers:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+    local result: i32
+
+    add result, a, b
+    ret result
+    func_end
+
+main:
+    func_begin i32
+    local x: i32
+    local y: i32
+    local sum: i32
+
+    set x, 10
+    set y, 20
+
+    call sum, add_numbers, x, y
+    print sum
+
+    ret 0
+    func_end

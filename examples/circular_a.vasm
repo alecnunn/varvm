@@ -1,0 +1,8 @@
+; Circular include test - file A
+include "circular_b.vasm"
+
+section .text
+func_a:
+    func_begin i32
+    ret 1
+    func_end

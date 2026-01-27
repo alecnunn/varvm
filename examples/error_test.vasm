@@ -1,0 +1,20 @@
+; error_test.vasm
+; Test error reporting with source locations
+
+section .text
+
+main:
+    func_begin i32
+    local a: i32
+    local b: i32
+    local result: i32
+
+    set a, 10
+    set b, 0
+
+    ; This will cause a division by zero error
+    div result, a, b
+
+    print result
+    ret 0
+    func_end

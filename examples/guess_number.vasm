@@ -1,0 +1,105 @@
+; Guess the Number Game
+; Demonstrates: loops, conditionals, comparisons, input/output
+; The program picks a secret number and gives hints
+
+section .text
+
+main:
+    func_begin i32
+    local secret: i32
+    local guess: i32
+    local attempts: i32
+    local too_low: i32
+    local too_high: i32
+    local correct: i32
+    local continue_game: i32
+
+    ; Secret number is 42
+    set secret, 42
+    set attempts, 0
+    set continue_game, 1
+
+.game_loop:
+    ; Check if we should continue
+    jnz continue_game, .make_guess
+    jmp .game_over
+
+.make_guess:
+    ; Increment attempts
+    add attempts, attempts, 1
+
+    ; Simulate guesses (in real interactive version, would use input)
+    ; Let's simulate a sequence: 25, 50, 40, 42
+
+    ; First attempt: 25
+    eq guess, attempts, 1
+    jnz guess, .guess_25
+
+    ; Second attempt: 50
+    eq guess, attempts, 2
+    jnz guess, .guess_50
+
+    ; Third attempt: 40
+    eq guess, attempts, 3
+    jnz guess, .guess_40
+
+    ; Fourth attempt: 42
+    eq guess, attempts, 4
+    jnz guess, .guess_42
+
+    ; End game after 4 attempts
+    set continue_game, 0
+    jmp .game_loop
+
+.guess_25:
+    set guess, 25
+    jmp .check_guess
+
+.guess_50:
+    set guess, 50
+    jmp .check_guess
+
+.guess_40:
+    set guess, 40
+    jmp .check_guess
+
+.guess_42:
+    set guess, 42
+    jmp .check_guess
+
+.check_guess:
+    ; Print the guess
+    print guess
+
+    ; Check if correct
+    eq correct, guess, secret
+    jnz correct, .win
+
+    ; Check if too low
+    lt too_low, guess, secret
+    jnz too_low, .hint_too_low
+
+    ; Must be too high
+    jmp .hint_too_high
+
+.hint_too_low:
+    ; In a real game, would print "Too low!"
+    ; For now, continue guessing
+    jmp .game_loop
+
+.hint_too_high:
+    ; In a real game, would print "Too high!"
+    ; For now, continue guessing
+    jmp .game_loop
+
+.win:
+    ; Print attempts
+    print attempts  ; Shows how many attempts it took
+
+    ; End game
+    set continue_game, 0
+    jmp .game_loop
+
+.game_over:
+    ret 0
+    func_end

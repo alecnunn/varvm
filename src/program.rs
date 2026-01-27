@@ -1,6 +1,7 @@
 use crate::opcode::OpCode;
 use crate::types::{DataType, Operand};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 pub struct Variable {
@@ -57,12 +58,34 @@ impl Function {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct SourceLocation {
+    pub line: usize,
+    pub column: usize,
+    pub snippet: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SourceMap {
+    pub file: PathBuf,
+    pub instruction_locations: HashMap<usize, SourceLocation>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StringLiteral {
+    pub id: usize,
+    pub content: String,
+    pub global_name: String,  // Name of the global variable that points to this string
+}
+
+#[derive(Debug, Clone)]
 pub struct Program {
     pub instructions: Vec<OpCode>,
     pub globals: Vec<Variable>,
     pub functions: HashMap<String, Function>,
     pub labels: HashMap<String, usize>,
+    pub source_map: Option<SourceMap>,
+    pub strings: Vec<StringLiteral>,
 }
 
 impl Program {
@@ -72,7 +95,19 @@ impl Program {
             globals: Vec::new(),
             functions: HashMap::new(),
             labels: HashMap::new(),
+            source_map: None,
+            strings: Vec::new(),
         }
+    }
+
+    pub fn add_string(&mut self, content: String, global_name: String) -> usize {
+        let id = self.strings.len();
+        self.strings.push(StringLiteral {
+            id,
+            content,
+            global_name,
+        });
+        id
     }
 
     pub fn emit(&mut self, opcode: OpCode) -> usize {
@@ -112,7 +147,7 @@ impl Program {
         self.emit(OpCode::Call {
             result: result.map(String::from),
             func: func.to_string(),
-            args: args.iter().map(|s| s.to_string()).collect(),
+            args: args.iter().map(|s| Operand::Variable(s.to_string())).collect(),
         });
     }
 }

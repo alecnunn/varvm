@@ -165,7 +165,7 @@ pub enum OpCode {
     Call {
         result: Option<String>,
         func: String,
-        args: Vec<String>,
+        args: Vec<Operand>,
     },
     Return {
         value: Option<Operand>,
@@ -182,6 +182,43 @@ pub enum OpCode {
         dest: String,
         source: String,
         target_type: DataType,
+    },
+
+    // math intrinsics
+    Sqrt {
+        dest: String,
+        source: Operand,
+    },
+    Pow {
+        dest: String,
+        base: Operand,
+        exp: Operand,
+    },
+    Abs {
+        dest: String,
+        source: Operand,
+    },
+    Min {
+        dest: String,
+        a: Operand,
+        b: Operand,
+    },
+    Max {
+        dest: String,
+        a: Operand,
+        b: Operand,
+    },
+    Sin {
+        dest: String,
+        source: Operand,
+    },
+    Cos {
+        dest: String,
+        source: Operand,
+    },
+    Tan {
+        dest: String,
+        source: Operand,
     },
 
     // system operations

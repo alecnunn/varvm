@@ -1,0 +1,68 @@
+; Test program demonstrating stdlib functions
+; Note: stdlib functions from math.vasm
+
+section .text
+
+; factorial(n) -> n!
+factorial:
+    func_begin i32
+    pop_arg n
+
+    local temp: i32
+    set temp, 1
+    le temp, n, temp
+    jnz temp, .base_case
+
+    local n_minus_1: i32
+    sub n_minus_1, n, 1
+    call temp, factorial, n_minus_1
+    mul temp, n, temp
+    ret temp
+
+.base_case:
+    ret 1
+    func_end
+
+; gcd(a, b) -> greatest common divisor
+gcd:
+    func_begin i32
+    pop_arg a
+    pop_arg b
+
+    local zero: i32
+    set zero, 0
+    local cond: i32
+    eq cond, b, zero
+    jnz cond, .return_a
+
+    local remainder: i32
+    mod remainder, a, b
+
+    call remainder, gcd, b, remainder
+    ret remainder
+
+.return_a:
+    ret a
+    func_end
+
+main:
+    func_begin i32
+
+    ; Test factorial(6) = 720
+    local n: i32
+    set n, 6
+    local fact_result: i32
+    call fact_result, factorial, n
+    print fact_result
+
+    ; Test gcd(48, 18) = 6
+    local a: i32
+    set a, 48
+    local b: i32
+    set b, 18
+    local gcd_result: i32
+    call gcd_result, gcd, a, b
+    print gcd_result
+
+    ret 0
+    func_end
